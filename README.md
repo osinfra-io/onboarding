@@ -1,4 +1,4 @@
-# <img align="left" width="45" height="45" src="https://github.com/osinfra-io/onboarding/assets/1610100/502cc3e9-fd8c-42be-be03-8aa45e04452a"> Google Cloud Platform - Landing Zone
+# Onboarding
 
 **[GitHub Actions](https://github.com/osinfra-io/onboarding/actions):**
 
@@ -6,11 +6,20 @@
 
 ## 📄 Repository Description
 
-This repository creates a Google Cloud landing-zone. The design aligns with our [Google Cloud landing zone platform](https://docs.osinfra.io/google-cloud-platform/landing-zone) and should be a prerequisite to deploying enterprise workloads in a cloud environment.
+This repository provides Infrastructure as Code (IaC) automation for onboarding teams across multiple platforms using OpenTofu. It implements Team Topologies principles to create a structured organizational hierarchy with appropriate access controls and tooling integrations.
+
+The module automates the creation of:
+
+- **Google Cloud folder hierarchy** following Team Topologies (Platform Teams, Stream-aligned Teams, etc.)
+- **Google Cloud Identity Groups** with role-based access (admin, writer, reader)
+- **GitHub Teams** with hierarchical structure and environment-specific approval workflows
+- **Datadog Teams** for monitoring and observability
+
+This enables platform teams to quickly onboard new teams with consistent security, governance, and operational practices across sandbox, non-production, and production environments.
 
 ## 🏭 Platform Information
 
-- Documentation: [docs.osinfra.io](https://docs.osinfra.io/product-guides/google-cloud-platform/landing-zone/onboarding)
+- Documentation: [docs.osinfra.io](https://docs.osinfra.io/product-guides/google-cloud-platform/onboarding)
 - Service Interfaces: [github.com](https://github.com/osinfra-io/onboarding/issues/new/choose)
 
 ## <img align="left" width="35" height="35" src="https://github.com/osinfra-io/github-organization-management/assets/1610100/39d6ae3b-ccc2-42db-92f1-276a5bc54e65"> Development
@@ -32,11 +41,12 @@ See the [documentation](https://docs.osinfra.io/fundamentals/development-setup) 
 
 Links to documentation and other resources required to develop and iterate in this repository successfully.
 
-- [Team Topologies](https://teamtopologies.com/) - Organizational design methodology
-- [resource landing-zone](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-landing-zone)
-- [groups](https://cloud.google.com/identity/docs/groups)
-- [iam](https://cloud.google.com/iam/docs/overview)
-- [OpenTofu](https://opentofu.org/docs/) - Infrastructure as Code tool
+- [google cloud platform groups](https://cloud.google.com/identity/docs/groups)
+- [google cloud platform iam](https://cloud.google.com/iam/docs/overview)
+- [google cloud platform resource landing-zone](https://cloud.google.com/resource-manager/docs/cloud-platform-resource-landing-zone)
+- [team topologies](https://teamtopologies.com/) - Organizational design methodology
+- [github teams](https://docs.github.com/en/organizations/organizing-members-into-teams/about-teams)
+- [datadog teams](https://docs.datadoghq.com/account_management/teams/)
 
 ## Architecture
 
