@@ -1,0 +1,230 @@
+name: Team Management
+description: Service interface for adding, updating, or deleting teams in the landing zone.
+title: "[TEAM] "
+labels:
+  - "team-management"
+  - "enhancement"
+
+body:
+  - type: textarea
+    id: markdown-text
+    attributes:
+      label: "Developer notes:"
+      value: |
+        <!-- Do not edit this section. It is intended to provide the developer working on this issue with additional context and instructions. -->
+        [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/osinfra-io/github-opentofu-codespace)
+
+        **Team Configuration Files:**
+        - Platform Teams: `teams/pt-{team-name}.tfvars`
+        - Stream-aligned Teams: `teams/st-{team-name}.tfvars`
+        - Complicated-subsystem Teams: `teams/cst-{team-name}.tfvars`
+        - Enabling Teams: `teams/et-{team-name}.tfvars`
+
+        **Resources Created:**
+        - Google Cloud folder hierarchy (Team Type → Team → Environments)
+        - Google Cloud Identity Groups (3 roles: admin, writer, reader)
+        - GitHub Teams (parent + 4 child teams)
+        - Datadog Teams (monitoring/observability)
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        Please fill out the following details to request team management operations in the Google Cloud Landing Zone.
+
+  - type: input
+    id: email-address
+    attributes:
+      label: "Requestor email:"
+      description: How can we get in touch with you if we need more info?
+      placeholder: email@example.com
+    validations:
+      required: true
+
+  - type: dropdown
+    id: operation-type
+    attributes:
+      label: "Operation type:"
+      description: What type of team operation do you need?
+      options:
+        - Add new team
+        - Update existing team
+        - Delete team
+    validations:
+      required: true
+
+  - type: input
+    id: team-name
+    attributes:
+      label: "Team name:"
+      description: The display name for the team (Title Case, e.g., "Customer Trust", "Platform Engineering")
+      placeholder: Customer Trust
+    validations:
+      required: true
+
+  - type: dropdown
+    id: team-type
+    attributes:
+      label: "Team type (Team Topologies):"
+      description: Select the team type according to Team Topologies methodology
+      options:
+        - platform-team - Provides internal services to accelerate stream-aligned teams
+        - stream-aligned-team - Aligned to business capabilities/customer value streams
+        - complicated-subsystem-team - Focus on specific technical domains requiring deep expertise
+        - enabling-team - Help stream-aligned teams overcome obstacles and develop capabilities
+    validations:
+      required: true
+
+  - type: textarea
+    id: github-parent-team
+    attributes:
+      label: "GitHub parent team membership:"
+      description: |
+        Configure the top-level GitHub team membership.
+        Format: maintainers: [username1, username2], members: [username3, username4]
+      placeholder: |
+        maintainers: ["team-lead"]
+        members: ["product-manager", "stakeholder"]
+      value: |
+        maintainers: []
+        members: []
+    validations:
+      required: false
+
+  - type: textarea
+    id: github-child-teams
+    attributes:
+      label: "GitHub child teams membership:"
+      description: |
+        Configure the child team memberships for approval workflows.
+        All four teams are required: sandbox-approver, non-production-approver, production-approver, repository-administrators
+      placeholder: |
+        sandbox-approver:
+          maintainers: ["team-lead"]
+          members: ["developer1", "developer2"]
+        non-production-approver:
+          maintainers: ["team-lead", "senior-dev"]
+          members: []
+        production-approver:
+          maintainers: ["team-lead"]
+          members: []
+        repository-administrators:
+          maintainers: ["team-lead"]
+          members: ["senior-dev"]
+      value: |
+        sandbox-approver:
+          maintainers: []
+          members: []
+        non-production-approver:
+          maintainers: []
+          members: []
+        production-approver:
+          maintainers: []
+          members: []
+        repository-administrators:
+          maintainers: []
+          members: []
+    validations:
+      required: false
+
+  - type: textarea
+    id: google-identity-groups
+    attributes:
+      label: "Google Cloud Identity Groups:"
+      description: |
+        Configure membership for Google Cloud Identity Groups (3 roles: admin, writer, reader).
+        Use email addresses for Google Workspace users.
+      placeholder: |
+        admin:
+          managers: []
+          members: []
+          owners: ["team-lead@company.com"]
+        writer:
+          managers: []
+          members: ["developer1@company.com", "developer2@company.com"]
+          owners: ["team-lead@company.com"]
+        reader:
+          managers: []
+          members: ["stakeholder1@company.com", "stakeholder2@company.com"]
+          owners: ["team-lead@company.com"]
+      value: |
+        admin:
+          managers: []
+          members: []
+          owners: []
+        writer:
+          managers: []
+          members: []
+          owners: []
+        reader:
+          managers: []
+          members: []
+          owners: []
+    validations:
+      required: false
+
+  - type: textarea
+    id: datadog-team
+    attributes:
+      label: "Datadog team membership:"
+      description: |
+        Configure Datadog team for monitoring and observability.
+        Use email addresses for team members.
+      placeholder: |
+        admins: ["team-lead@company.com"]
+        members: ["developer1@company.com", "developer2@company.com"]
+      value: |
+        admins: []
+        members: []
+    validations:
+      required: false
+
+  - type: textarea
+    id: business-justification
+    attributes:
+      label: "Business justification:"
+      description: |
+        Explain the business need for this team operation.
+        - For new teams: What business capability/domain will this team own?
+        - For updates: What changes are needed and why?
+        - For deletions: Why is the team being dissolved? What happens to their resources?
+      placeholder: |
+        This stream-aligned team will own the customer trust and safety domain,
+        including user verification, fraud detection, and compliance monitoring systems.
+    validations:
+      required: true
+
+  - type: input
+    id: target-date
+    attributes:
+      label: "Target completion date:"
+      description: When do you need this team operation completed?
+      placeholder: YYYY-MM-DD
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: "Acknowledgments:"
+      description: Please confirm your understanding
+      options:
+        - label: I understand that team creation will generate Google Cloud folders, GitHub teams, and Datadog teams
+          required: true
+        - label: I understand that team deletion will require manual cleanup of associated resources and projects
+          required: false
+        - label: I have appropriate permissions to request this team operation
+          required: true
+        - label: I will coordinate with affected team members about any membership changes
+          required: false
+
+  - type: textarea
+    id: additional-comments
+    attributes:
+      label: "Additional comments:"
+      description: |
+        Anything else you'd like to add? Include any special requirements,
+        dependencies, or context that would help us understand your request better.
+    validations:
+      required: false
