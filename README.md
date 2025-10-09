@@ -1,4 +1,4 @@
-# Onboarding
+# <img width="45" height="45" alt="opentofu" src="https://github.com/user-attachments/assets/e7b3623b-6357-442e-a559-6d1494218355" /> Onboarding
 
 **[GitHub Actions](https://github.com/osinfra-io/onboarding/actions):**
 
