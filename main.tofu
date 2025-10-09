@@ -240,11 +240,6 @@ resource "google_folder_iam_member" "team_access" {
 #   └── Teams (Onboarding, Kubernetes, Customer Trust, etc.)
 #       └── Environments (Sandbox, Non-production, Production)
 #
-# Each team also gets:
-# - Google Cloud Identity Groups with 3 standard roles (admin, writer, reader) at team level
-# - GitHub Teams with parent-child hierarchy for approval workflows
-# - Datadog Teams for monitoring and observability with admin/member roles
-#
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy#folders
 
 resource "google_folder" "environment" {
