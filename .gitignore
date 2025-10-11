@@ -12,6 +12,10 @@
 # Ignore plan output files
 plan.out
 
+# Ignore state files
+*.tfstate
+*.tfstate.*
+
 # Other Files
 *.log
 *.bak
