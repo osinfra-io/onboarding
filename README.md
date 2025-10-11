@@ -50,7 +50,7 @@ Links to documentation and other resources required to develop and iterate in th
 
 ## Architecture
 
-The module creates a three-level folder hierarchy following Team Topologies principles:
+The module creates a three-level Google Cloud Platform folder hierarchy following Team Topologies principles:
 
 ```text
 Top Level Folder (provided)
@@ -73,7 +73,7 @@ Top Level Folder (provided)
 Additionally, it creates:
 
 - **Google Cloud Identity Groups** with 3 standard roles per team (admin, writer, reader) applied at team folder level
-- **GitHub Teams** with hierarchical structure (parent team with child teams for approvers and administrators)
+- **GitHub Teams** with hierarchical structure (parent team with child teams for GitHub Action sapprovers and repository administrators)
 - **Datadog Teams** for monitoring and observability with admin/member roles, one per top-level team
 
 ## Interface (tfvars)
@@ -140,103 +140,6 @@ team = {
 }
 ```
 
-#### `top_level_folder_id`
-
-The ID of the top-level folder where team folders will be created.
-
-```hcl
-top_level_folder_id = "123456789012"
-```
-
-### Optional Variables
-
-#### `customer_id`
-
-Google Workspace or Cloud Identity customer ID for creating identity groups.
-
-- **Type**: `string`
-- **Default**: `"C01hd34v8"`
-
-#### `primary_domain`
-
-Main domain for Google Workspace account (used for identity group email addresses).
-
-- **Type**: `string`
-- **Default**: `"osinfra.io"`
-
-#### `datadog_api_key`
-
-Datadog API key for creating teams and managing resources.
-
-- **Type**: `string`
-- **Default**: `null`
-- **Sensitive**: Yes
-
-#### `datadog_app_key`
-
-Datadog APP key for creating teams and managing resources.
-
-- **Type**: `string`
-- **Default**: `null`
-- **Sensitive**: Yes
-
-#### `billing_account`
-
-The billing account ID to associate with team budgets. Each team gets a monthly budget for cost monitoring.
-
-- **Type**: `string`
-- **Default**: `"01C550-A2C86B-B8F16B"`
-
-#### `billing_project`
-
-The quota project for provider requests during bootstrapping. Required for initial setup.
-
-- **Type**: `string`
-- **Required**: Yes (no default)
-
-#### `github_token`
-
-GitHub personal access token for creating and managing GitHub teams and memberships.
-
-- **Type**: `string`
-- **Required**: Yes (no default)
-- **Sensitive**: Yes
-
-#### `monthly_budget_amount`
-
-Monthly budget amount in USD for each team's environment folders.
-
-- **Type**: `number`
-- **Default**: `100`
-
-### State Configuration Variables
-
-These are typically set by CI/CD systems and should NOT be set in OpenTofu configuration:
-
-#### `state_bucket` (CI/CD only)
-
-The name of the GCS bucket to store OpenTofu state files.
-
-- **Type**: `string`
-- **Set by**: GitHub Actions workflows
-- **Usage**: Backend configuration
-
-#### `state_kms_encryption_key` (CI/CD only)
-
-The KMS encryption key for state and plan files.
-
-- **Type**: `string`
-- **Set by**: GitHub Actions workflows
-- **Usage**: State file encryption
-
-#### `state_prefix` (CI/CD only)
-
-The prefix for state files in the GCS bucket.
-
-- **Type**: `string`
-- **Set by**: GitHub Actions workflows
-- **Usage**: State file organization
-
 ## Team Structure
 
 ### Team Types (Team Topologies)
@@ -250,13 +153,20 @@ Each team must specify one of four team types:
 
 ### Environments
 
-Each team automatically gets three hardcoded environment folders (no customization needed):
+Each team automatically gets three hardcoded environment folders:
 
-- **Hardcoded environments**: `Sandbox`, `Non-production`, `Production` (automatically created for every team)
+- **Hardcoded environments**: `Sandbox`, `Non-production`, `Production`
 
 ### Google Identity Groups
 
 Each team has exactly 3 Google Cloud identity groups using basic IAM roles applied at the team folder level:
+
+- **Hardcoded basic IAM roles**: reader, writer, admin
+  - reader: Permissions for read-only actions that don't affect state, such as viewing (but not modifying) existing resources or data.
+  - writer: All of the permissions in the Reader role, plus permissions for actions that modify state, such as changing existing resources.
+  - admin: All of the permissions in the Writer role, plus permissions for actions like the following: Completing sensitive tasks, like managing tag bindings for Compute Engine resources; Managing roles and permissions for a project and all resources within the project; Setting up billing for a project.
+
+Users can be assigned to one of three roles within each group:
 
 - **`managers`**: Users who can manage the group
 - **`members`**: Regular members of the group
@@ -269,9 +179,6 @@ Each team has exactly 3 Google Cloud identity groups using basic IAM roles appli
 - **`display_name`**: `"{Team Type}: {Team Name} {Role}"` (e.g., "Platform Team: Onboarding Admin")
 
 **Access Scope**: Groups have access to the entire team folder and all child environment folders.
-
-- **Hierarchical Structure**: Child teams are nested under parent teams
-- **Membership**: Parent teams automatically include all child team maintainers as members
 
 ### GitHub Team Structure
 
@@ -294,30 +201,6 @@ Each team has a hierarchical GitHub team structure with parent and child teams:
 - **Parent Team**: Gets configured maintainers/members PLUS child team maintainers (auto-inherited as members)
 - **Child Teams**: Independently configured maintainers and members
 - **Deduplication**: Users configured directly on parent team take precedence over auto-inherited membership
-
-## Resources Created
-
-### Folder Hierarchy
-
-- **Team Type folders**: One per team type (Platform Teams, Stream-aligned Teams, etc.)
-- **Team folders**: One per team under the appropriate team type folder
-- **Environment folders**: One per environment under each team folder
-
-### Google Cloud Identity Groups
-
-- **Google Cloud Identity Groups**: Exactly 3 per team (admin, writer, reader)
-- **Email format**: `{team_prefix}-{team}-{role}@{primary_domain}`
-- **Display name format**: `"{Team Type}: {Team Name} {Role}"` (e.g., "Platform Team: Onboarding Admin")
-- **Roles**: admin, writer, reader (Google Cloud basic IAM roles)
-- **Access Level**: Team folder level (includes all child environments)
-- **Example email**: `pt-onboarding-admin@osinfra.io`
-
-### GitHub Teams
-
-- **Parent Teams**: One per team (e.g., `pt-onboarding`, `st-customer-trust`)
-- **Child Teams**: Four per team (sandbox-approver, non-production-approver, production-approver, repository-administrators)
-- **Hierarchical Structure**: Child teams are nested under parent teams
-- **Membership**: Parent teams automatically include all child team maintainers as members
 
 ### Datadog Teams
 

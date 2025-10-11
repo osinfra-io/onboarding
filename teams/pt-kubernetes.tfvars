@@ -10,19 +10,19 @@ team = {
 
     github_child_teams = {
       sandbox-approver = {
-        maintainers = ["brett"]
+        maintainers = ["brettcurtis"]
         members     = []
       }
       non-production-approver = {
-        maintainers = ["brett"]
+        maintainers = ["brettcurtis"]
         members     = []
       }
       production-approver = {
-        maintainers = ["brett"]
+        maintainers = ["brettcurtis"]
         members     = []
       }
       repository-administrators = {
-        maintainers = ["brett"]
+        maintainers = ["brettcurtis"]
         members     = []
       }
     }
