@@ -39,10 +39,59 @@ locals {
     }
   }
 
-  # Flatten all unique Datadog users from all teams for user lookup
+  # Extract all unique Datadog users from team configurations (excluding organization admins)
   datadog_users = toset(flatten([
     for team_key, team in local.datadog_teams : concat(team.admins, team.members)
   ]))
+
+  # Extract all unique GitHub users from team configurations (excluding organization owners)
+  github_users = toset(flatten([
+    for team_key, team in var.team : concat(
+      team.github_parent_team.maintainers,
+      team.github_parent_team.members,
+      flatten([for child_team in values(team.github_child_teams) : concat(child_team.maintainers, child_team.members)])
+    )
+  ]))
+
+  # Hardcoded GitHub organization owners - users who should have admin/owner role
+  # WARNING: These users are protected from deletion via lifecycle rules in main.tofu
+  # To remove a user: 1) Remove from this list, 2) Run tofu plan/apply, 3) Manually remove via GitHub UI
+  github_organization_owners = ["brettcurtis"]
+
+  # Hardcoded Datadog organization admins - users who should have admin role
+  # WARNING: These users are protected from deletion via lifecycle rules in main.tofu
+  # To remove a user: 1) Remove from this list, 2) Run tofu plan/apply, 3) Manually remove via Datadog UI
+  datadog_organization_admins = ["brett@osinfra.io"]
+
+  # Hardcoded Datadog standard users - users who should have standard role (vs read-only default)
+  datadog_organization_standard_users = []
+
+  # Combine team users with organization owners to get complete GitHub user set
+  all_github_users = toset(concat(
+    tolist(local.github_users),
+    local.github_organization_owners
+  ))
+
+  # Combine team users with Datadog admins and standard users to get complete Datadog user set
+  all_datadog_users = toset(concat(
+    tolist(local.datadog_users),
+    local.datadog_organization_admins,
+    local.datadog_organization_standard_users
+  ))
+
+  # Determine user roles (admin for org owners, member for others)
+  github_user_roles = {
+    for username in local.all_github_users :
+    username => contains(local.github_organization_owners, username) ? "admin" : "member"
+  }
+
+  # Determine Datadog user role IDs (admin > standard > read-only as default)
+  datadog_user_roles = {
+    for email in local.all_datadog_users :
+    email => contains(local.datadog_organization_admins, email) ? data.datadog_role.this["Datadog Admin Role"].id : (
+      contains(local.datadog_organization_standard_users, email) ? data.datadog_role.this["Datadog Standard Role"].id : data.datadog_role.this["Datadog Read Only Role"].id
+    )
+  }
 
   # Flatten all environments from all teams into a single map
   # Creates keys like "onboarding-sandbox" for each team-environment combination
@@ -123,6 +172,18 @@ locals {
     "non-production-approver"   = "Non-Production GitHub Actions approvals"
     "production-approver"       = "Production GitHub Actions approvals"
     "repository-administrators" = "Repository administration"
+  }
+
+  # Review request delegations for GitHub teams with sufficient members
+  # Requires 3+ total members since PR author can't review their own code
+  review_request_delegations = {
+    for team_key, team in var.team : team_key => {
+      team_key      = team_key
+      total_members = length(concat(team.github_parent_team.maintainers, team.github_parent_team.members))
+      # Request (total_members - 1) reviewers, max 2, to account for PR author
+      member_count = min(max(length(concat(team.github_parent_team.maintainers, team.github_parent_team.members)) - 1, 1), 2)
+    }
+    if length(concat(team.github_parent_team.maintainers, team.github_parent_team.members)) >= 3
   }
 
   # Google Cloud role descriptions mapping

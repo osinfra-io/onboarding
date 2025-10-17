@@ -14,8 +14,9 @@ The module automates the creation of:
 - **Google Cloud Identity Groups** with role-based access (admin, writer, reader)
 - **GitHub Teams** with hierarchical structure and environment-specific approval workflows
 - **Datadog Teams** for monitoring and observability
+- **User Management** with lifecycle protection for organization owners and admins
 
-This enables platform teams to quickly onboard new teams with consistent security, governance, and operational practices across sandbox, non-production, and production environments.
+This enables platform teams to quickly onboard new teams with consistent security, governance, and operational practices across sandbox, non-production, and production environments while protecting critical administrative access.
 
 ## 🏭 Platform Information
 
@@ -73,8 +74,10 @@ Top Level Folder (provided)
 Additionally, it creates:
 
 - **Google Cloud Identity Groups** with 3 standard roles per team (admin, writer, reader) applied at team folder level
-- **GitHub Teams** with hierarchical structure (parent team with child teams for GitHub Action sapprovers and repository administrators)
+- **GitHub Teams** with hierarchical structure (parent team with child teams for GitHub Actions approvers and repository administrators)
+- **GitHub Users** with organization membership management and admin protection
 - **Datadog Teams** for monitoring and observability with admin/member roles, one per top-level team
+- **Datadog Users** with role-based access and admin protection
 
 ## Interface (tfvars)
 
@@ -208,6 +211,29 @@ Each team has a hierarchical GitHub team structure with parent and child teams:
 - **Name format**: `"{Team Type}: {Team Name}"` (e.g., "Platform Team: Onboarding")
 - **Description format**: `"{Team Name} is a {Team Type} {Team Topologies description}."` (e.g., "Onboarding is a Platform Team providing a compelling internal product to accelerate delivery by Stream-aligned teams.")
 - **Handle format**: `{team_prefix}-{team_name}` (e.g., "pt-onboarding")
+
+### User Management & Admin Protection
+
+**Organization Owners/Admins:**
+
+- **GitHub**: Hardcoded organization owners in `locals.tofu` get admin role and lifecycle protection
+- **Datadog**: Hardcoded organization admins in `locals.tofu` get admin role and lifecycle protection
+- **Protection**: Admin users cannot be destroyed via `tofu destroy` due to `prevent_destroy = true` lifecycle rules
+- **Role Protection**: Admin roles cannot be accidentally changed via `ignore_changes` lifecycle rules
+
+**Regular Users:**
+
+- **GitHub**: Team members get standard member role and can be managed normally
+- **Datadog**: Team members get read-only role by default, but can be assigned standard role via hardcoded list in `locals.tofu`
+- **Management**: Can be added/removed through normal Infrastructure as Code workflows
+
+**Admin Removal Process:**
+
+1. Remove user from hardcoded admin list in `locals.tofu`
+2. Run `tofu plan` and `tofu apply`
+3. Manually remove user via platform UI (GitHub/Datadog)
+
+**Security**: This two-step process prevents accidental loss of organization access during infrastructure changes.
 
 ## Validation Rules
 

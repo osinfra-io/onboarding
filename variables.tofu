@@ -50,7 +50,15 @@ variable "primary_domain" {
 }
 
 variable "team" {
-  description = "A map of teams following Team Topologies methodology, with hardcoded environments (Sandbox/Non-production/Production), hardcoded Google Cloud identity groups (3 standard roles at team level), hardcoded GitHub teams (customizable membership), and Datadog teams (admin/member roles). Structure: team_key => { display_name, team_type, github_parent_team{maintainers,members}, google_identity_groups{admin,writer,reader}, github_child_teams{}, datadog_team{} }"
+  description = <<-EOT
+    A map of teams following Team Topologies methodology, with hardcoded environments (Sandbox/Non-production/Production),
+    hardcoded Google Cloud identity groups (3 standard roles at team level), hierarchical GitHub teams (customizable membership with admin protection),
+    and Datadog teams (admin/member roles with admin protection).
+
+    Organization owners/admins are managed via hardcoded lists in locals.tofu with lifecycle protection.
+
+    Structure: team_key => { display_name, team_type, github_parent_team{maintainers,members}, google_identity_groups{admin,writer,reader}, github_child_teams{}, datadog_team{} }
+  EOT
   type = map(object({
     display_name = string
     team_type    = string

@@ -1,46 +1,39 @@
 # Output Values
 # https://opentofu.org/docs/language/values/outputs
+#
+# Single source of truth for all infrastructure information needed by consumers
 
-# Complete folder hierarchy for documentation and reference
-output "folder_hierarchy" {
-  description = "Complete folder hierarchy with team types, teams, and environments"
+# Complete team infrastructure information
+output "teams" {
+  description = "Comprehensive team infrastructure with folders, identity groups, and metadata"
   value = {
     for team_key, team in var.team : team_key => {
-      team_type        = team.team_type
+      # Team metadata
+      display_name = team.display_name
+      team_type    = team.team_type
+
+      # Folder hierarchy
       team_type_folder = local.team_type_display_names[team.team_type]
-      team_folder      = team.display_name
       team_folder_id   = google_folder.team[team_key].id
+
+      # Environment folders
       environments = {
         for env_key, env in local.environments :
         env.environment => google_folder.environment[env_key].id
         if startswith(env_key, "${team_key}-")
       }
-    }
-  }
-}
 
-# Identity group information for IAM auditing and management
-output "identity_groups" {
-  description = "Google Cloud identity groups with email addresses and metadata"
-  value = {
-    for group_key, group in local.identity_groups : group_key => {
-      email        = google_cloud_identity_group.this[group_key].group_key[0].id
-      display_name = group.display_name
-      description  = group.description
-      team         = group.team
-      role         = split("-", group_key)[1] # Extract role from group_key (team-role format)
-    }
-  }
-}
-
-# Team metadata for reference and management
-output "teams" {
-  description = "Team information with folder IDs and metadata"
-  value = {
-    for team_key, team in var.team : team_key => {
-      folder_id    = google_folder.team[team_key].id
-      display_name = team.display_name
-      team_type    = team.team_type
+      # Identity groups for this team
+      identity_groups = {
+        for group_key, group in local.identity_groups :
+        split("-", group_key)[1] => {
+          email        = google_cloud_identity_group.this[group_key].group_key[0].id
+          display_name = group.display_name
+          description  = group.description
+          role         = split("-", group_key)[1]
+        }
+        if startswith(group_key, "${team_key}-")
+      }
     }
   }
 }

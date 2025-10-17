@@ -1,17 +1,55 @@
 # Data Sources
 # https://opentofu.org/docs/language/data-sources
 
-# Datadog User Data Source
-# https://search.opentofu.org/provider/DataDog/datadog/latest/docs/data-sources/user
+# Datadog Role Data Sources
+# https://search.opentofu.org/provider/DataDog/datadog/latest/docs/data-sources/role
 
-data "datadog_user" "team_members" {
-  for_each = local.datadog_users
+# Fetch all required Datadog roles
+data "datadog_role" "this" {
+  for_each = toset([
+    "Datadog Admin Role",
+    "Datadog Read Only Role",
+    "Datadog Standard Role"
+  ])
 
-  filter = each.value
+  filter = each.key
 }
 
 # Resources
 # https://opentofu.org/docs/language/resources
+
+# Datadog User Resource
+# https://search.opentofu.org/provider/DataDog/datadog/latest/docs/resources/user
+
+# Datadog User Management - Split resources for lifecycle protection
+# Organization admins are protected from deletion to maintain platform access
+# Datadog Organization Admins - Protected from deletion
+resource "datadog_user" "admins" {
+  for_each = toset(local.datadog_organization_admins)
+
+  email = each.value
+  name  = split("@", each.value)[0] # Use email prefix as name
+  roles = [local.datadog_user_roles[each.value]]
+
+  depends_on = [data.datadog_role.this]
+
+  # Protect organization admins from accidental deletion
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [roles] # Prevent accidental role changes
+  }
+}
+
+# Regular Datadog Users - Can be destroyed normally
+resource "datadog_user" "this" {
+  for_each = setsubtract(local.all_datadog_users, toset(local.datadog_organization_admins))
+
+  email = each.value
+  name  = split("@", each.value)[0] # Use email prefix as name
+  roles = [local.datadog_user_roles[each.value]]
+
+  depends_on = [data.datadog_role.this]
+}
 
 # Datadog Team Membership Resource
 # https://search.opentofu.org/provider/DataDog/datadog/latest/docs/resources/team_membership
@@ -20,8 +58,13 @@ resource "datadog_team_membership" "this" {
   for_each = local.datadog_team_memberships
 
   team_id = datadog_team.this[each.value.team_id].id
-  user_id = data.datadog_user.team_members[each.value.user_id].id
-  role    = each.value.role
+  user_id = try(
+    datadog_user.admins[each.value.user_id].id,
+    datadog_user.this[each.value.user_id].id
+  )
+  role = each.value.role
+
+  depends_on = [datadog_user.admins, datadog_user.this]
 }
 
 # Datadog Team Resource
@@ -44,6 +87,8 @@ resource "github_team_membership" "child_maintainers" {
   team_id  = github_team.children[each.value.team_key].id
   username = each.value.username
   role     = each.value.role
+
+  depends_on = [github_membership.owners, github_membership.members]
 }
 
 resource "github_team_membership" "child_members" {
@@ -52,6 +97,8 @@ resource "github_team_membership" "child_members" {
   team_id  = github_team.children[each.value.team_key].id
   username = each.value.username
   role     = each.value.role
+
+  depends_on = [github_membership.owners, github_membership.members]
 }
 
 # GitHub Team Membership Resource - Parent Teams
@@ -63,6 +110,8 @@ resource "github_team_membership" "parents" {
   team_id  = github_team.parents[each.value.team_key].id
   username = each.value.username
   role     = each.value.role
+
+  depends_on = [github_membership.owners, github_membership.members]
 }
 
 # GitHub Team Resource - Child Teams
@@ -77,11 +126,37 @@ resource "github_team" "children" {
   parent_team_id = github_team.parents[each.value.parent_team].id
 }
 
+# GitHub Organization Membership Management - Split resources for lifecycle protection
+# Organization owners are protected from deletion to maintain platform access
+# https://search.opentofu.org/provider/integrations/github/latest/docs/resources/membership
+
+# GitHub Organization Owners - Protected from deletion
+resource "github_membership" "owners" {
+  for_each = toset(local.github_organization_owners)
+
+  username = each.value
+  role     = "admin"
+
+  # Protect organization owners from accidental deletion
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [role] # Prevent accidental demotion
+  }
+}
+
+# Regular GitHub Members - Can be destroyed normally
+resource "github_membership" "members" {
+  for_each = setsubtract(local.all_github_users, toset(local.github_organization_owners))
+
+  username = each.value
+  role     = "member"
+}
+
 # GitHub Team Resource - Parent Teams
 # https://search.opentofu.org/provider/integrations/github/latest/docs/resources/team
 
 # If you need to import a team, you can do so with the following command:
-# tofu import github_team.parents\[\"team-key\"\] <team_id>
+# tofu import github_team.parents\["team-key"\] <team_id>
 
 # To get the team ids, you can run the following curl command with a token that has the read:org scope against your own organization.
 # curl -H "Authorization: token $GITHUB_READ_ORG_TOKEN" https://api.github.com/orgs/osinfra-io/teams
@@ -93,6 +168,35 @@ resource "github_team" "parents" {
   description = each.value.description
   privacy     = each.value.privacy
 }
+
+# GitHub Team Settings Resource
+# https://search.opentofu.org/provider/integrations/github/latest/docs/resources/team_settings
+
+resource "github_team_settings" "this" {
+  for_each = local.review_request_delegations
+
+  review_request_delegation {
+    algorithm    = "LOAD_BALANCE"
+    member_count = each.value.member_count
+    notify       = false
+  }
+
+  team_id = github_team.parents[each.key].id
+}
+
+# GitHub Organization Projects V2 - Not yet supported in Terraform provider
+# GitHub has deprecated classic Projects (v1) in favor of Projects V2 (beta)
+# The Terraform GitHub provider doesn't yet have full support for Projects V2
+#
+# Manual creation steps for now:
+# 1. Go to https://github.com/orgs/osinfra-io/projects
+# 2. Create new project for each team:
+#    - Name: {team.display_name} (e.g., "Onboarding")
+#    - Description: "{display_name} is a {team_type} {description}. This project tracks work, features, and initiatives for the {display_name} team."
+# 3. Add team access via project Settings → Manage access
+#
+# TODO: Implement when Terraform provider supports Projects V2
+# Tracking: https://github.com/integrations/terraform-provider-github/issues/1661
 
 # Google Billing Budget Resource
 # https://search.opentofu.org/provider/hashicorp/google/latest/docs/resources/google_billing_budget
